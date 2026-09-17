@@ -1,0 +1,34 @@
+ollama_host: "http://127.0.0.1:11434"
+# Per-request read timeout for Ollama. Local inference on large models can take
+# several minutes; 600 s gives ample room without hanging forever.
+# The connect timeout is always 5 s regardless of this value.
+ollama_timeout_seconds: 600
+preferred_model: "qwen3-coder:30b"
+database_path: "data/po.db"
+default_workspace: ""
+log_level: "INFO"
+agent_max_iterations: 50
+agent_task_timeout_seconds: 3600
+command_timeout_seconds: 120
+command_output_limit_bytes: 50000
+file_read_limit_bytes: 100000
+search_max_results: 50
+index_max_file_bytes: 1048576
+permission_mode: "standard"
+ignore_directories:
+  - ".git"
+  - "node_modules"
+  - ".venv"
+  - "venv"
+  - "__pycache__"
+  - "dist"
+  - "build"
+  - "coverage"
+  - ".tox"
+  - ".mypy_cache"
+  - ".pytest_cache"
+  - ".next"
+  - ".turbo"
+  - "target"
+  - ".idea"
+  - ".vscode"
