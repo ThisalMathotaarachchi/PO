@@ -35,7 +35,11 @@ class AppContainer:
         self.bus = EventBus()
         self.memory = MemoryManager(db)
         self.workspace = WorkspaceManager(self.memory)
-        self.provider: ModelProvider = provider or OllamaProvider(settings.ollama_host, settings.ollama_timeout_seconds)
+        self.provider: ModelProvider = provider or OllamaProvider(
+            settings.ollama_host,
+            settings.ollama_timeout_seconds,
+            settings.ollama_generation_timeout_seconds,
+        )
         self.model_registry = ModelRegistry(self.provider)
         self.router = ModelRouter(preferred=settings.preferred_model)
         self.index = ProjectIndex(self.memory, settings.ignore_directories, settings.index_max_file_bytes)

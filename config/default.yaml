@@ -3,6 +3,10 @@ ollama_host: "http://127.0.0.1:11434"
 # several minutes; 600 s gives ample room without hanging forever.
 # The connect timeout is always 5 s regardless of this value.
 ollama_timeout_seconds: 600
+# Overall generation timeout for Ollama. This is a wall-clock deadline for the
+# entire generation (not idle timeout). 1800 s (30 min) allows slow but valid
+# generations while protecting against stalled/hanging models.
+ollama_generation_timeout_seconds: 1800
 preferred_model: "qwen3-coder:30b"
 database_path: "data/po.db"
 default_workspace: ""

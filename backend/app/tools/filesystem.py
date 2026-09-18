@@ -102,6 +102,7 @@ def _specs() -> list[ToolSpec]:
                     "path": {
                         "type": "string",
                         "description": "Directory path with no file extension. Not for .html/.css/.js/.py/.md/.json files.",
+                        "pattern": "^(?!.*\\.(html|htm|css|js|mjs|cjs|ts|tsx|jsx|json|md|txt|py|pyi|toml|yml|yaml|xml|svg|csv|sql|sh|ps1|bat|ini|cfg|rs|go|java|kt|cs|vue|scss|less|map|lock|env)$).+$",
                     }
                 },
                 "required": ["path"],
@@ -314,6 +315,11 @@ class FilesystemTools:
                     "Use write_file or create_file to create files with extensions."
                 ),
                 code="path_is_file",
+                data={
+                    "suggested_tool": "write_file",
+                    "suggested_arguments": {"path": raw_path, "content": ""},
+                    "original_path": raw_path,
+                },
             )
         resolved = self.sandbox.resolve(raw_path)
         if resolved.exists and resolved.is_dir:

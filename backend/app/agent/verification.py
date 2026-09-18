@@ -73,12 +73,22 @@ def verify_completion(
             )
         return VerificationResult(passed=True, message="Task completion verified.")
 
-    problems = _check_file_references(workspace, all_files)
+    # Verify that explicitly created/modified paths are actually files, not directories
+    for f in files_created | files_modified:
+        path = workspace / f
+        if path.exists() and path.is_dir():
+            return VerificationResult(
+                passed=False,
+                message=f"Created path '{f}' is a directory, not a file. Use write_file or create_file for files.",
+                missing_files=[f],
+            )
+
+    problems, missing_files = _check_file_references(workspace, all_files)
     if problems:
         return VerificationResult(
             passed=False,
             message=" ".join(problems),
-            missing_files=problems,
+            missing_files=missing_files,
         )
 
     return VerificationResult(passed=True, message="Task completion verified.")
@@ -156,20 +166,24 @@ def _path_problem(workspace: Path, referenced: Path) -> str | None:
     return None
 
 
-def _check_file_references(workspace: Path, file_paths: set[str]) -> list[str]:
-    """Validate local references. Existing-but-directory and empty files fail."""
+def _check_file_references(workspace: Path, file_paths: set[str]) -> tuple[list[str], list[str]]:
+    """Validate local references. Existing-but-directory and empty files fail.
+    Returns (problem_messages, missing_filenames)."""
     problems: list[str] = []
+    missing_files: list[str] = []
 
-    def _add(message: str) -> None:
+    def _add(message: str, missing_filename: str | None = None) -> None:
         if message not in problems:
             problems.append(message)
+        if missing_filename and missing_filename not in missing_files:
+            missing_files.append(missing_filename)
 
     for file_path_str in sorted(file_paths):
         file_path = workspace / file_path_str
         if not file_path.exists():
             continue
         if file_path.is_dir():
-            _add(f"'{file_path_str}' exists but is a directory, not a file")
+            _add(f"'{file_path_str}' exists but is a directory, not a file", file_path_str)
             continue
         if not file_path.is_file():
             continue
@@ -181,7 +195,7 @@ def _check_file_references(workspace: Path, file_paths: set[str]) -> list[str]:
             logger.warning("Error reading %s: %s", file_path, exc)
             continue
         if not content.strip() and file_path.suffix.lower() in {".html", ".htm", ".css", ".js"}:
-            _add(f"'{file_path_str}' is empty")
+            _add(f"'{file_path_str}' is empty", file_path_str)
         file_dir = file_path.parent
         for ref in _extract_file_references(content, file_path.suffix.lower()):
             referenced_path = (file_dir / ref).resolve()
@@ -191,8 +205,20 @@ def _check_file_references(workspace: Path, file_paths: set[str]) -> list[str]:
                 continue
             issue = _path_problem(workspace.resolve(), referenced_path)
             if issue:
-                _add(issue)
-    return problems
+                # Extract the filename from the issue message for missing_files
+                missing_name = _extract_filename_from_issue(issue)
+                _add(issue, missing_name)
+    return problems, missing_files
+
+
+def _extract_filename_from_issue(issue: str) -> str | None:
+    """Extract the filename from an issue message."""
+    import re
+    # Match patterns like "missing file 'styles.css'" or "'styles.css' is empty" or "'styles.css' exists but is a directory"
+    match = re.search(r"'([^']+)'", issue)
+    if match:
+        return match.group(1)
+    return None
 
 
 def _extract_file_references(content: str, file_ext: str) -> list[str]:

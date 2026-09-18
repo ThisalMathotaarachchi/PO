@@ -221,6 +221,7 @@ class AgentEngine:
                 model=selected.id,
                 tools=self.tools.openai_tools(),
                 family=selected.family,
+                cancel_event=control.cancelled,
             )
             request_duration = time.perf_counter() - request_start
             
@@ -499,6 +500,8 @@ def _user_line(call: ToolCall, result: ToolResult) -> str:
 def _operation_key(call: ToolCall) -> str | None:
     """Generate a key for detecting redundant operations."""
     if call.tool in {"read_file", "file_exists", "list_directory"}:
+        return str(call.arguments.get("path") or "")
+    if call.tool in {"write_file", "create_file"}:
         return str(call.arguments.get("path") or "")
     if call.tool == "run_tests":
         return call.tool  # Any test run

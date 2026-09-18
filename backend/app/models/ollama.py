@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from collections.abc import AsyncIterator
 from typing import Any
 from urllib.parse import urljoin
@@ -39,11 +40,14 @@ def _is_thinking_model(model: str, family: str = "") -> bool:
 class OllamaProvider(ModelProvider):
     name = "ollama"
 
-    def __init__(self, host: str, timeout: float = 0.0) -> None:
+    def __init__(self, host: str, timeout: float = 0.0, generation_timeout: float = 1800.0) -> None:
         self.host = host.rstrip("/")
         # `timeout` is an *idle* (between-chunk) timeout.  0 means wait as long
         # as the stream is alive — there is no overall generation deadline.
         self.timeout = timeout
+        # `generation_timeout` is an overall wall-clock deadline for the entire
+        # generation. 0 means no overall deadline.
+        self.generation_timeout = generation_timeout
         self._log = get_logger("models.ollama")
         self._active_stream: httpx.Response | None = None
 
@@ -180,6 +184,8 @@ class OllamaProvider(ModelProvider):
         content_parts: list[str] = []
         tool_calls: list[dict[str, Any]] = []
         final_data: dict[str, Any] = {}
+        # Track generation deadline if configured
+        deadline = time.monotonic() + self.generation_timeout if self.generation_timeout and self.generation_timeout > 0 else None
         try:
             async with httpx.AsyncClient(timeout=self._client_timeout()) as client:
                 async with client.stream("POST", self._url("/api/chat"), json=body) as response:
@@ -192,6 +198,12 @@ class OllamaProvider(ModelProvider):
                         )
                     response.raise_for_status()
                     async for line in _lines_until_cancel(response, cancel_event):
+                        # Check generation deadline
+                        if deadline is not None and time.monotonic() > deadline:
+                            raise ProviderError(
+                                "Model generation exceeded wall-clock timeout",
+                                code="generation_timeout",
+                            )
                         if not line:
                             continue
                         try:

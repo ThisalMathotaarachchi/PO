@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from enum import StrEnum
@@ -71,6 +72,7 @@ class ModelProvider(ABC):
         model: str,
         tools: list[dict[str, Any]] | None = None,
         temperature: float = 0.1,
+        cancel_event: asyncio.Event | None = None,
     ) -> ModelResponse:
         raise NotImplementedError
 

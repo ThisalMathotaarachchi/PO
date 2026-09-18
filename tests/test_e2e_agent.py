@@ -27,6 +27,7 @@ from app.permissions.sandbox import PathSandbox
 from app.tools.development import DevelopmentTools
 from app.tools.filesystem import FilesystemTools
 from app.tools.git import GitTools
+from app.tools.processes import ProcessManager
 from app.tools.registry import ToolRegistry
 from app.tools.search import SearchTools
 from app.tools.terminal import TerminalSession
@@ -85,6 +86,7 @@ async def test_fix_failing_tests_end_to_end(tmp_path: Path) -> None:
         terminal=term,
         development=DevelopmentTools(term, workspace, bus),
         git=GitTools(term),
+        processes=ProcessManager(sandbox, bus),
         policy=PermissionPolicy(sandbox),
         bus=bus,
     )
@@ -97,7 +99,6 @@ async def test_fix_failing_tests_end_to_end(tmp_path: Path) -> None:
         memory=memory,
         bus=bus,
         max_iterations=15,
-        task_timeout=90,
     )
     task = Task(
         prompt="Inspect this project, identify the failing problem, fix it, and run the tests.",

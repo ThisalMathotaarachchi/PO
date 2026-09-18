@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -46,6 +47,7 @@ class MockModelProvider(ModelProvider):
         tools: list[dict[str, Any]] | None = None,
         temperature: float = 0.1,
         family: str = "",
+        cancel_event: asyncio.Event | None = None,
     ) -> ModelResponse:
         if not self._available:
             raise ProviderError("Mock Ollama unavailable", code="ollama_unavailable")

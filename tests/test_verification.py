@@ -230,16 +230,22 @@ def test_check_file_references_mixed_status(tmp_path):
     <script src="missing.js"></script>
     """)
     
-    # Create some of the referenced files
+    # Create some of the referenced files (empty - should be flagged)
     (tmp_path / "exists.css").write_text("")
     (tmp_path / "exists.js").write_text("")
     
-    missing = _check_file_references(tmp_path, {"index.html"})
+    problems, missing = _check_file_references(tmp_path, {"index.html"})
     
     assert "missing.css" in missing
     assert "missing.js" in missing
-    assert "exists.css" not in missing
-    assert "exists.js" not in missing
+    # Empty files are also reported as problems
+    assert "exists.css" in missing
+    assert "exists.js" in missing
+    # Also check problems contain the right messages
+    assert any("missing.css" in p for p in problems)
+    assert any("missing.js" in p for p in problems)
+    assert any("exists.css" in p and "empty" in p for p in problems)
+    assert any("exists.js" in p and "empty" in p for p in problems)
 
 
 def test_verify_completion_elyra_full_scenario(tmp_path):
@@ -315,3 +321,36 @@ def test_verify_completion_elyra_complete(tmp_path):
     
     assert result.passed, f"Verification should pass when all files exist. Message: {result.message}"
     assert len(result.missing_files) == 0, "No files should be missing"
+
+
+def test_verify_completion_created_path_is_directory(tmp_path):
+    """Verification fails when a created path is a directory instead of a file."""
+    # Create a directory where a file was expected
+    (tmp_path / "styles.css").mkdir()
+    
+    result = verify_completion(
+        workspace_path=str(tmp_path),
+        task_prompt="Create a website with styles.css",
+        files_created={"styles.css"},
+        files_modified=set()
+    )
+    
+    assert not result.passed
+    assert "is a directory, not a file" in result.message
+    assert "styles.css" in result.missing_files
+
+
+def test_verify_completion_modified_path_is_directory(tmp_path):
+    """Verification fails when a modified path is a directory instead of a file."""
+    (tmp_path / "script.js").mkdir()
+    
+    result = verify_completion(
+        workspace_path=str(tmp_path),
+        task_prompt="Update script.js",
+        files_created=set(),
+        files_modified={"script.js"}
+    )
+    
+    assert not result.passed
+    assert "is a directory, not a file" in result.message
+    assert "script.js" in result.missing_files

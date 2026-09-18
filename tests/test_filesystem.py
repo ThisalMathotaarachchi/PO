@@ -109,3 +109,47 @@ async def test_delete_directory(fs, ctx) -> None:
     # Verify it's gone
     exists = await tools.file_exists({"path": "temp"}, ctx)
     assert exists.data["exists"] is False
+
+
+@pytest.mark.asyncio
+async def test_create_directory_rejects_file_paths(fs, ctx) -> None:
+    """Test that create_directory rejects obvious file paths with structured suggestion."""
+    tools, root = fs
+    # Try to create a directory with a file-like path
+    result = await tools.create_directory({"path": "styles.css"}, ctx)
+    assert result.status == "invalid_arguments"
+    assert result.code == "path_is_file"
+    assert "looks like a file" in result.error
+    # Check structured suggestion
+    assert result.data.get("suggested_tool") == "write_file"
+    assert result.data.get("suggested_arguments") == {"path": "styles.css", "content": ""}
+    assert result.data.get("original_path") == "styles.css"
+    # Ensure no directory was created
+    assert not (root / "styles.css").exists()
+
+
+@pytest.mark.asyncio
+async def test_create_directory_rejects_various_file_extensions(fs, ctx) -> None:
+    """Test that create_directory rejects various file extensions."""
+    tools, root = fs
+    for file_path in ["script.js", "app.py", "index.html", "config.json", "README.md"]:
+        result = await tools.create_directory({"path": file_path}, ctx)
+        assert result.status == "invalid_arguments", f"Should reject {file_path}"
+        assert result.code == "path_is_file"
+        assert result.data.get("suggested_tool") == "write_file"
+        assert result.data.get("suggested_arguments")["path"] == file_path
+    # Ensure no directories were created
+    for file_path in ["script.js", "app.py", "index.html", "config.json", "README.md"]:
+        assert not (root / file_path).exists()
+
+
+@pytest.mark.asyncio
+async def test_create_directory_allows_valid_directories(fs, ctx) -> None:
+    """Test that create_directory still allows valid directory paths."""
+    tools, root = fs
+    result = await tools.create_directory({"path": "src/components"}, ctx)
+    assert result.status == "success"
+    assert (root / "src" / "components").is_dir()
+    result2 = await tools.create_directory({"path": "assets/images"}, ctx)
+    assert result2.status == "success"
+    assert (root / "assets" / "images").is_dir()

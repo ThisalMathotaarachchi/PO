@@ -43,6 +43,7 @@ class Settings(BaseSettings):
 
     ollama_host: str = "http://127.0.0.1:11434"
     ollama_timeout_seconds: float = 600.0
+    ollama_generation_timeout_seconds: float = 1800.0
     preferred_model: str = ""
     database_path: str = "data/po.db"
     default_workspace: str = ""
