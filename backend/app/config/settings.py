@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     search_max_results: int = 50
     index_max_file_bytes: int = 1_048_576
     permission_mode: str = "standard"
+    verify_static_sites_runtime: bool = False
+    verify_runtime_readiness_timeout_seconds: float = 10.0
+    verify_runtime_port: int = 0  # 0 = auto-assign
     ignore_directories: list[str] = Field(
         default_factory=lambda: [
             ".git",

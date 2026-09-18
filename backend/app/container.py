@@ -106,6 +106,9 @@ class AppContainer:
                 memory=self.memory,
                 bus=self.bus,
                 max_iterations=self.settings.agent_max_iterations,
+                verify_static_sites_runtime=self.settings.verify_static_sites_runtime,
+                verify_runtime_readiness_timeout_seconds=self.settings.verify_runtime_readiness_timeout_seconds,
+                verify_runtime_port=self.settings.verify_runtime_port,
             )
         else:
             self.engine.tools = tools

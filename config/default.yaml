@@ -19,6 +19,14 @@ file_read_limit_bytes: 100000
 search_max_results: 50
 index_max_file_bytes: 1048576
 permission_mode: "standard"
+# Static site runtime verification (optional)
+# When enabled, completion verification will start a local HTTP server
+# and verify that the site and its local assets are servable.
+verify_static_sites_runtime: false
+# Time to wait for the local server to become ready before verification
+verify_runtime_readiness_timeout_seconds: 10
+# Port for the local verification server (0 = auto-assign)
+verify_runtime_port: 0
 ignore_directories:
   - ".git"
   - "node_modules"

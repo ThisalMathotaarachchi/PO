@@ -81,6 +81,9 @@ class AgentEngine:
         memory: MemoryManager,
         bus: EventBus,
         max_iterations: int,
+        verify_static_sites_runtime: bool = False,
+        verify_runtime_readiness_timeout_seconds: float = 10.0,
+        verify_runtime_port: int = 0,
     ) -> None:
         self.provider = provider
         self.model_registry = registry
@@ -90,6 +93,9 @@ class AgentEngine:
         self.memory = memory
         self.bus = bus
         self.max_iterations = max_iterations
+        self.verify_static_sites_runtime = verify_static_sites_runtime
+        self.verify_runtime_readiness_timeout_seconds = verify_runtime_readiness_timeout_seconds
+        self.verify_runtime_port = verify_runtime_port
         self.planner = Planner()
         self.executor = Executor(tools)
         self._log = get_logger("agent")
@@ -256,11 +262,14 @@ class AgentEngine:
                 summary = action.summary or "Done."
                 
                 # Verify completion before accepting
-                verification = verify_completion(
+                verification = await verify_completion(
                     workspace_path=task.workspace_path,
                     task_prompt=task.prompt,
                     files_created=files_created,
-                    files_modified=files_modified
+                    files_modified=files_modified,
+                    verify_runtime=self.verify_static_sites_runtime,
+                    runtime_readiness_timeout=self.verify_runtime_readiness_timeout_seconds,
+                    runtime_port=self.verify_runtime_port,
                 )
                 
                 if not verification.passed:
